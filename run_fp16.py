@@ -12,8 +12,7 @@ from openvino.runtime import Core, properties
 import time
 import openvino.runtime.properties as props
 from openvino.runtime import Type  # 添加类型支持
-# ========== 兼容性修复层 ==========
-# 确保 functional_tensor 模块存在
+
 if not hasattr(torchvision.transforms, 'functional_tensor'):
     functional_tensor = ModuleType('torchvision.transforms.functional_tensor')
     sys.modules['torchvision.transforms.functional_tensor'] = functional_tensor
@@ -23,12 +22,12 @@ if not hasattr(torchvision.transforms, 'functional_tensor'):
 # 导入实际功能函数
 from torchvision.transforms import functional as F
 
-# 添加需要的函数到 functional_tensor
+
 for func_name in ['rgb_to_grayscale', 'adjust_brightness', 'adjust_contrast', 'adjust_saturation']:
     if hasattr(F, func_name) and not hasattr(torchvision.transforms.functional_tensor, func_name):
         setattr(torchvision.transforms.functional_tensor, func_name, getattr(F, func_name))
         print(f"✅ 已添加 {func_name} 到 functional_tensor")
-# ================================
+
 
 # ========== 模型路径 ==========
 MODEL_DIR = "../FP16/models"
@@ -37,7 +36,6 @@ MODEL_NAME = "RealESRGAN_x4plus.pth"
 MODEL_PATH = os.path.join(MODEL_DIR, MODEL_NAME)
 
 
-# ================================
 
 # ========== 确保模型文件存在 ==========
 def download_model():
@@ -192,7 +190,7 @@ def convert_step_by_step(onnx_path, xml_path):
         core = ov.Core()
         model = core.read_model(onnx_path)
 
-        # 2. 设置动态输入形状（如果需要）
+        # 2. 设置动态输入形状
         input_layer = model.input(0)
         partial_shape = input_layer.get_partial_shape()
         if partial_shape[2].is_dynamic and partial_shape[3].is_dynamic:
@@ -271,9 +269,8 @@ def run_gpu_inference(ov_model_path, input_image_path, output_image_path):
 
         # 预处理 - 使用 FP16 精度
         preprocess_start = time.time()
-        # 使用 np.float16 而不是 np.float32
-        input_data = img.astype(np.float16) / 255.0  # 修改为 FP16
-        input_data = np.transpose(input_data, (2, 0, 1))  # HWC to CHW
+        input_data = img.astype(np.float16) / 255.0 
+        input_data = np.transpose(input_data, (2, 0, 1))
         input_data = np.expand_dims(input_data, axis=0)  # 添加 batch 维度
         preprocess_time = time.time() - preprocess_start
 
@@ -298,12 +295,12 @@ def run_gpu_inference(ov_model_path, input_image_path, output_image_path):
             props.hint.execution_mode(): props.hint.ExecutionMode.PERFORMANCE,
             props.enable_profiling(): False,
             # 添加 FP16 精度设置
-            props.hint.inference_precision(): Type.f16  # 关键修改
+            props.hint.inference_precision(): Type.f16 
         }
         config_time = time.time() - config_start
         print("✅ 应用 GPU 优化配置 (FP16)")
 
-        # 编译模型（应用配置）
+        # 编译模型
         compile_start = time.time()
         compiled_model = core.compile_model(model, device, config)
         infer_request = compiled_model.create_infer_request()
@@ -322,7 +319,7 @@ def run_gpu_inference(ov_model_path, input_image_path, output_image_path):
         result = infer_request.get_output_tensor(output_layer.index).data
         get_results_time = time.time() - get_results_start
 
-        # 后处理 - 处理可能的 FP16 输出
+        # 后处理
         postprocess_start = time.time()
         output_data = np.squeeze(result, axis=0)
         output_data = np.transpose(output_data, (1, 2, 0))
@@ -386,14 +383,14 @@ def main():
         return
 
     # 3. 转换为 OpenVINO 格式 (FP16)
-    ov_path = convert_to_openvino(onnx_path, precision="FP16")  # 修改为 FP16
+    ov_path = convert_to_openvino(onnx_path, precision="FP16")
     if ov_path is None or not os.path.exists(ov_path):
         print("❌ OpenVINO 转换失败，程序终止")
         return
 
     # 4. 准备输入图像
     input_image = "input.jpg"
-    output_image = "output.jpg"  # 修改输出文件名以区分精度
+    output_image = "output.jpg"
 
     # 5. 在 GPU 上运行推理 (FP16)
     print(f"\n{'=' * 50}")
@@ -454,7 +451,7 @@ def main():
 
 
 if __name__ == "__main__":
-    # 添加 OpenVINO 到 PATH（Windows 可能需要）
+    # 添加 OpenVINO 到 PATH
     try:
         import openvino
 
