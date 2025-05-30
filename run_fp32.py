@@ -193,8 +193,8 @@ def convert_step_by_step(onnx_path, xml_path):
             partial_shape[3] = -1  # 动态宽度
             model.reshape({input_layer: partial_shape})
 
-        # 3. 保存为 FP16 格式
-        ov.save_model(model, xml_path, compress_to_fp16=True)
+        # 3. 保存为 FP32 格式
+        ov.save_model(model, xml_path, compress_to_fp16=False)
 
         if os.path.exists(xml_path):
             print(f"✅ 分步转换成功: {xml_path}")
