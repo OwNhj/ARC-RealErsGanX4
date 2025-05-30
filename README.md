@@ -1,4 +1,4 @@
-# ARC-RealErsGanX4
+# 适用于intel ARC核显的RealErsGanX4
 适用于ARC核显-RealErsGan的X4图片超分（只在258v上测试过）
 需要超分的图片改名为input.jpg放到run.py同路径下
 FP16/32速度没区别（可能是个人问题）
