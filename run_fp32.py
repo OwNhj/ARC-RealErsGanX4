@@ -10,23 +10,21 @@ from types import ModuleType
 import openvino as ov
 from openvino.runtime import Core, properties
 import time
-# ========== 兼容性修复层 ==========
-# 确保 functional_tensor 模块存在
+
 if not hasattr(torchvision.transforms, 'functional_tensor'):
     functional_tensor = ModuleType('torchvision.transforms.functional_tensor')
     sys.modules['torchvision.transforms.functional_tensor'] = functional_tensor
     torchvision.transforms.functional_tensor = functional_tensor
     print("✅ 已创建 functional_tensor 兼容模块")
 
-# 导入实际功能函数
+
 from torchvision.transforms import functional as F
 
-# 添加需要的函数到 functional_tensor
+
 for func_name in ['rgb_to_grayscale', 'adjust_brightness', 'adjust_contrast', 'adjust_saturation']:
     if hasattr(F, func_name) and not hasattr(torchvision.transforms.functional_tensor, func_name):
         setattr(torchvision.transforms.functional_tensor, func_name, getattr(F, func_name))
         print(f"✅ 已添加 {func_name} 到 functional_tensor")
-# ================================
 
 # ========== 模型路径 ==========
 MODEL_DIR = "../FP32/models"
@@ -184,7 +182,7 @@ def convert_step_by_step(onnx_path, xml_path):
         core = ov.Core()
         model = core.read_model(onnx_path)
 
-        # 2. 设置动态输入形状（如果需要）
+        # 2. 设置动态输入形状
         input_layer = model.input(0)
         partial_shape = input_layer.get_partial_shape()
         if partial_shape[2].is_dynamic and partial_shape[3].is_dynamic:
@@ -264,8 +262,8 @@ def run_gpu_inference(ov_model_path, input_image_path, output_image_path):
         # 预处理
         preprocess_start = time.time()
         input_data = img.astype(np.float32) / 255.0
-        input_data = np.transpose(input_data, (2, 0, 1))  # HWC to CHW
-        input_data = np.expand_dims(input_data, axis=0)  # 添加 batch 维度
+        input_data = np.transpose(input_data, (2, 0, 1))  
+        input_data = np.expand_dims(input_data, axis=0)  
         preprocess_time = time.time() - preprocess_start
 
         # 获取输入层信息
